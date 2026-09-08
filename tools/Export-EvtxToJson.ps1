@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Normaliza eventos 4688 de ficheiros EVTX para a taxonomia Sigma "process_creation".
+    Normaliza eventos 4688 e 4698 de ficheiros EVTX para taxonomia Sigma.
 
 .DESCRIPTION
     Isto e, na pratica, meio backend de Sigma: a parte que traduz nomes de campo.
@@ -17,6 +17,13 @@
 
     A ultima linha e a armadilha. No EVTX, "ProcessId" e o processo CRIADOR, nao o criado.
     Quem mapeia ProcessId -> ProcessId inverte a arvore inteira e nao recebe erro nenhum.
+
+    Evento 4698 -- "a scheduled task was created" -- usa a logsource windows/security,
+    onde o campo de correlacao e o proprio EventID. Campos emitidos: TaskName, TaskContent.
+
+    TaskContent e o XML integral da tarefa e passa facilmente de 1600 caracteres. Truncá-lo
+    ao limite normal destruiria a deteccao, entao tem limite proprio (-MaxTaskContentLength).
+    E XML de configuracao, nao texto de payload -- a razao do truncamento geral nao se aplica.
 
     SO LEITURA. Nao escreve no Event Log, nao altera politica de auditoria,
     nao executa nada do conteudo dos eventos.
@@ -36,7 +43,8 @@
 param(
     [Parameter(Mandatory)][string]$Path,
     [Parameter(Mandatory)][string]$OutFile,
-    [int]$MaxFieldLength = 400
+    [int]$MaxFieldLength = 400,
+    [int]$MaxTaskContentLength = 20000
 )
 
 Set-StrictMode -Version Latest
@@ -74,7 +82,7 @@ $records = New-Object System.Collections.Generic.List[object]
 
 foreach ($file in $files) {
     $events = Get-WinEvent -Path $file.FullName -ErrorAction Stop |
-              Where-Object { $_.Id -eq 4688 }
+              Where-Object { $_.Id -in @(4688, 4698) }
 
     foreach ($event in $events) {
         $bag = Get-EventFields -Event $event
@@ -96,13 +104,17 @@ foreach ($file in $files) {
             LogonId         = Get-Field -Bag $bag -Name 'SubjectLogonId'    -Limit $MaxFieldLength
             ProcessId       = Get-Field -Bag $bag -Name 'NewProcessId'      -Limit $MaxFieldLength
             ParentProcessId = Get-Field -Bag $bag -Name 'ProcessId'         -Limit $MaxFieldLength
+            TaskName        = Get-Field -Bag $bag -Name 'TaskName'          -Limit $MaxFieldLength
+            TaskContent     = Get-Field -Bag $bag -Name 'TaskContent'       -Limit $MaxTaskContentLength
         })
     }
 }
 
 $records | ConvertTo-Json -Depth 4 | Set-Content -Path $OutFile -Encoding UTF8
 
-Write-Output ("eventos 4688 normalizados : {0}" -f $records.Count)
+Write-Output ("eventos normalizados      : {0}" -f $records.Count)
+Write-Output ("  4688 process_creation   : {0}" -f @($records | Where-Object EventID -eq 4688).Count)
+Write-Output ("  4698 scheduled task     : {0}" -f @($records | Where-Object EventID -eq 4698).Count)
 Write-Output ("ficheiros lidos           : {0}" -f @($files).Count)
 Write-Output ("sem ParentImage no schema : {0}" -f @($records | Where-Object { -not $_.ParentImage }).Count)
 Write-Output ("destino                   : {0}" -f $OutFile)

@@ -1,7 +1,13 @@
 [
   {
     "_fixture": "POSITIVO — copia do evento real do sample, para o caso base",
-    "_expected": "MATCH",
+    "_behaviour": "behaviour-01-schtasks-system-minute",
+    "_source": "derived from real CC0 sample event",
+    "_malicious": true,
+    "_expected": {
+      "marcus_schtasks_system_persistence": "MATCH",
+      "marcus_scheduled_task_system_audit": "NO MATCH"
+    },
     "SourceFile": "fixture",
     "EventID": 4688,
     "Computer": "srvdefender01.offsec.lan",
@@ -12,7 +18,13 @@
   },
   {
     "_fixture": "POSITIVO — variante: /ru \"NT AUTHORITY\\SYSTEM\" e /sc onstart",
-    "_expected": "MATCH",
+    "_behaviour": "behaviour-02-schtasks-system-onstart",
+    "_source": "SYNTHETIC FIXTURE",
+    "_malicious": true,
+    "_expected": {
+      "marcus_schtasks_system_persistence": "MATCH",
+      "marcus_scheduled_task_system_audit": "NO MATCH"
+    },
     "SourceFile": "fixture",
     "EventID": 4688,
     "Computer": "srv02.lab.local",
@@ -23,7 +35,13 @@
   },
   {
     "_fixture": "NEGATIVO por gatilho — SYSTEM mas semanal; manutencao plausivel",
-    "_expected": "NO MATCH",
+    "_behaviour": "behaviour-03-weekly-maintenance",
+    "_source": "SYNTHETIC FIXTURE",
+    "_malicious": false,
+    "_expected": {
+      "marcus_schtasks_system_persistence": "NO MATCH",
+      "marcus_scheduled_task_system_audit": "NO MATCH"
+    },
     "SourceFile": "fixture",
     "EventID": 4688,
     "Computer": "srv02.lab.local",
@@ -34,7 +52,13 @@
   },
   {
     "_fixture": "NEGATIVO por conta — alta frequencia mas conta de utilizador, sem privilegio",
-    "_expected": "NO MATCH",
+    "_behaviour": "behaviour-04-user-frequent-task",
+    "_source": "SYNTHETIC FIXTURE",
+    "_malicious": false,
+    "_expected": {
+      "marcus_schtasks_system_persistence": "NO MATCH",
+      "marcus_scheduled_task_system_audit": "NO MATCH"
+    },
     "SourceFile": "fixture",
     "EventID": 4688,
     "Computer": "wks10.lab.local",
@@ -45,7 +69,13 @@
   },
   {
     "_fixture": "NEGATIVO pelo FILTRO — instalador legitimo em Program Files cria tarefa SYSTEM onstart. Testa o ramo do filtro, nao a selection.",
-    "_expected": "NO MATCH",
+    "_behaviour": "behaviour-05-vendor-installer",
+    "_source": "SYNTHETIC FIXTURE",
+    "_malicious": false,
+    "_expected": {
+      "marcus_schtasks_system_persistence": "NO MATCH",
+      "marcus_scheduled_task_system_audit": "NO MATCH"
+    },
     "SourceFile": "fixture",
     "EventID": 4688,
     "Computer": "wks10.lab.local",
@@ -56,7 +86,13 @@
   },
   {
     "_fixture": "EVASAO — mesmo comportamento que o positivo 1, mas o filtro do fabricante e contornado por ParentImage ausente. Este DEVIA casar e casa; esta aqui para mostrar que o filtro nao protege o atacante.",
-    "_expected": "MATCH",
+    "_behaviour": "behaviour-06-no-parent-field",
+    "_source": "SYNTHETIC FIXTURE",
+    "_malicious": true,
+    "_expected": {
+      "marcus_schtasks_system_persistence": "MATCH",
+      "marcus_scheduled_task_system_audit": "NO MATCH"
+    },
     "SourceFile": "fixture",
     "EventID": 4688,
     "Computer": "srv03.lab.local",
@@ -67,7 +103,13 @@
   },
   {
     "_fixture": "FALSO NEGATIVO CONHECIDO — schtasks invocado por caminho relativo com aspas diferentes e /RU em maiusculas. A regra usa comparacao insensivel a maiusculas, entao ISTO CASA. Fixture existe para o provar, nao para o assumir.",
-    "_expected": "MATCH",
+    "_behaviour": "behaviour-07-uppercase-syntax",
+    "_source": "SYNTHETIC FIXTURE",
+    "_malicious": true,
+    "_expected": {
+      "marcus_schtasks_system_persistence": "MATCH",
+      "marcus_scheduled_task_system_audit": "NO MATCH"
+    },
     "SourceFile": "fixture",
     "EventID": 4688,
     "Computer": "srv03.lab.local",
@@ -78,7 +120,13 @@
   },
   {
     "_fixture": "FALSO NEGATIVO REAL — a tarefa e criada pela API do Task Scheduler, sem schtasks.exe. A regra NAO ve isto, e nenhuma regra baseada em process_creation ve. Limitacao declarada.",
-    "_expected": "NO MATCH",
+    "_behaviour": "behaviour-08-register-scheduledtask",
+    "_source": "SYNTHETIC FIXTURE",
+    "_malicious": true,
+    "_expected": {
+      "marcus_schtasks_system_persistence": "NO MATCH",
+      "marcus_scheduled_task_system_audit": "NO MATCH"
+    },
     "SourceFile": "fixture",
     "EventID": 4688,
     "Computer": "srv03.lab.local",
@@ -86,5 +134,118 @@
     "CommandLine": "powershell.exe -c Register-ScheduledTask -TaskName Updater -Trigger $t -Principal $p",
     "ParentImage": null,
     "User": "LAB\\svc-backup"
+  },
+  {
+    "_fixture": "POSITIVO REAL — evento 4698 do sample CC0, TaskContent integral, extraido do JSON normalizado e nao transcrito a mao",
+    "_behaviour": "behaviour-01-schtasks-system-minute",
+    "_source": "REAL EVENT from CC0 sample",
+    "_malicious": true,
+    "_expected": {
+      "marcus_schtasks_system_persistence": "NO MATCH",
+      "marcus_scheduled_task_system_audit": "MATCH"
+    },
+    "SourceFile": "fixture",
+    "EventID": 4698,
+    "Computer": "srv03.lab.local",
+    "User": "LAB\\admin",
+    "TaskName": "\\eviltask",
+    "TaskContent": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <RegistrationInfo>\n    <Date>2021-04-21T13:30:00</Date>\n    <Author>OFFSEC\\admmig</Author>\n    <URI>\\eviltask</URI>\n  </RegistrationInfo>\n  <Triggers>\n    <TimeTrigger>\n      <Repetition>\n        <Interval>PT1M</Interval>\n        <StopAtDurationEnd>false</StopAtDurationEnd>\n      </Repetition>\n      <StartBoundary>2021-04-21T13:30:00</StartBoundary>\n      <Enabled>true</Enabled>\n    </TimeTrigger>\n  </Triggers>\n  <Settings>\n    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>\n    <DisallowStartIfOnBatteries>true</DisallowStartIfOnBatteries>\n    <StopIfGoingOnBatteries>true</StopIfGoingOnBatteries>\n    <AllowHardTerminate>true</AllowHardTerminate>\n    <StartWhenAvailable>false</StartWhenAvailable>\n    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>\n    <IdleSettings>\n      <Duration>PT10M</Duration>\n      <WaitTimeout>PT1H</WaitTimeout>\n      <StopOnIdleEnd>true</StopOnIdleEnd>\n      <RestartOnIdle>false</RestartOnIdle>\n    </IdleSettings>\n    <AllowStartOnDemand>true</AllowStartOnDemand>\n    <Enabled>true</Enabled>\n    <Hidden>false</Hidden>\n    <RunOnlyIfIdle>false</RunOnlyIfIdle>\n    <WakeToRun>false</WakeToRun>\n    <ExecutionTimeLimit>PT72H</ExecutionTimeLimit>\n    <Priority>7</Priority>\n  </Settings>\n  <Actions Context=\"Author\">\n    <Exec>\n      <Command>C:\\tools\\shell.cmd</Command>\n    </Exec>\n  </Actions>\n  <Principals>\n    <Principal id=\"Author\">\n      <UserId>S-1-5-18</UserId>\n      <RunLevel>LeastPrivilege</RunLevel>\n    </Principal>\n  </Principals>\n</Task>"
+  },
+  {
+    "_fixture": "BLIND SPOT FECHADO — a mesma tarefa registada por Register-ScheduledTask. A regra 1 nao ve, porque nao ha schtasks.exe. Esta ve, porque audita o RESULTADO.",
+    "_behaviour": "behaviour-08-register-scheduledtask",
+    "_source": "SYNTHETIC FIXTURE",
+    "_malicious": true,
+    "_expected": {
+      "marcus_schtasks_system_persistence": "NO MATCH",
+      "marcus_scheduled_task_system_audit": "MATCH"
+    },
+    "SourceFile": "fixture",
+    "EventID": 4698,
+    "Computer": "srv03.lab.local",
+    "User": "LAB\\admin",
+    "TaskName": "\\Updater",
+    "TaskContent": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <RegistrationInfo><Author>LAB\\admin</Author></RegistrationInfo>\n  <Triggers><TimeTrigger><Repetition><Interval>PT1M</Interval></Repetition></TimeTrigger></Triggers>\n  <Actions Context=\"Author\"><Exec><Command>C:\\Windows\\Temp\\a.cmd</Command></Exec></Actions>\n  <Principals><Principal id=\"Author\"><UserId>S-1-5-18</UserId><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>\n</Task>"
+  },
+  {
+    "_fixture": "NEGATIVO pelo FILTRO — tarefa propria do Windows sob \\Microsoft\\, SYSTEM e gatilho de arranque",
+    "_behaviour": "behaviour-09-windows-own-task",
+    "_source": "SYNTHETIC FIXTURE",
+    "_malicious": false,
+    "_expected": {
+      "marcus_schtasks_system_persistence": "NO MATCH",
+      "marcus_scheduled_task_system_audit": "NO MATCH"
+    },
+    "SourceFile": "fixture",
+    "EventID": 4698,
+    "Computer": "srv03.lab.local",
+    "User": "LAB\\admin",
+    "TaskName": "\\Microsoft\\Windows\\UpdateOrchestrator\\Schedule Scan",
+    "TaskContent": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <RegistrationInfo><Author>Microsoft Corporation</Author></RegistrationInfo>\n  <Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers>\n  <Actions Context=\"Author\"><Exec><Command>C:\\Windows\\System32\\usoclient.exe</Command></Exec></Actions>\n  <Principals><Principal id=\"Author\"><UserId>S-1-5-18</UserId><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>\n</Task>"
+  },
+  {
+    "_fixture": "NEGATIVO por gatilho — SYSTEM mas semanal: manutencao plausivel",
+    "_behaviour": "behaviour-10-weekly-system-task",
+    "_source": "SYNTHETIC FIXTURE",
+    "_malicious": false,
+    "_expected": {
+      "marcus_schtasks_system_persistence": "NO MATCH",
+      "marcus_scheduled_task_system_audit": "NO MATCH"
+    },
+    "SourceFile": "fixture",
+    "EventID": 4698,
+    "Computer": "srv03.lab.local",
+    "User": "LAB\\admin",
+    "TaskName": "\\VendorWeeklyCleanup",
+    "TaskContent": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <RegistrationInfo><Author>LAB\\admin</Author></RegistrationInfo>\n  <Triggers><CalendarTrigger><ScheduleByWeek><DaysOfWeek><Sunday/></DaysOfWeek></ScheduleByWeek></CalendarTrigger></Triggers>\n  <Actions Context=\"Author\"><Exec><Command>C:\\Program Files\\Vendor\\clean.exe</Command></Exec></Actions>\n  <Principals><Principal id=\"Author\"><UserId>S-1-5-18</UserId><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>\n</Task>"
+  },
+  {
+    "_fixture": "NEGATIVO por principal — gatilho de arranque mas corre como utilizador, sem privilegio",
+    "_behaviour": "behaviour-11-user-boot-task",
+    "_source": "SYNTHETIC FIXTURE",
+    "_malicious": false,
+    "_expected": {
+      "marcus_schtasks_system_persistence": "NO MATCH",
+      "marcus_scheduled_task_system_audit": "NO MATCH"
+    },
+    "SourceFile": "fixture",
+    "EventID": 4698,
+    "Computer": "srv03.lab.local",
+    "User": "LAB\\admin",
+    "TaskName": "\\SyncNotes",
+    "TaskContent": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <RegistrationInfo><Author>LAB\\admin</Author></RegistrationInfo>\n  <Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers>\n  <Actions Context=\"Author\"><Exec><Command>C:\\Tools\\sync.exe</Command></Exec></Actions>\n  <Principals><Principal id=\"Author\"><UserId>LAB\\u1</UserId><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>\n</Task>"
+  },
+  {
+    "_fixture": "FALSO NEGATIVO DECLARADO — mesma tarefa maliciosa, com o nome camuflado sob \\Microsoft\\. O filtro exclui-a. Fraqueza documentada, nao escondida.",
+    "_behaviour": "behaviour-12-masquerading-task-name",
+    "_source": "SYNTHETIC FIXTURE",
+    "_malicious": true,
+    "_expected": {
+      "marcus_schtasks_system_persistence": "NO MATCH",
+      "marcus_scheduled_task_system_audit": "NO MATCH"
+    },
+    "SourceFile": "fixture",
+    "EventID": 4698,
+    "Computer": "srv03.lab.local",
+    "User": "LAB\\admin",
+    "TaskName": "\\Microsoft\\Windows\\UpdateOrchestrator\\Updater",
+    "TaskContent": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <RegistrationInfo><Author>LAB\\admin</Author></RegistrationInfo>\n  <Triggers><TimeTrigger><Repetition><Interval>PT1M</Interval></Repetition></TimeTrigger></Triggers>\n  <Actions Context=\"Author\"><Exec><Command>C:\\Windows\\Temp\\a.cmd</Command></Exec></Actions>\n  <Principals><Principal id=\"Author\"><UserId>S-1-5-18</UserId><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>\n</Task>"
+  },
+  {
+    "_fixture": "NEGATIVO de gating — evento 4688 cuja linha de comando contem as MESMAS strings que a regra 2 procura. Testa se selection_event EventID 4698 realmente porta.",
+    "_behaviour": "behaviour-13-string-collision",
+    "_source": "SYNTHETIC FIXTURE",
+    "_malicious": false,
+    "_expected": {
+      "marcus_schtasks_system_persistence": "NO MATCH",
+      "marcus_scheduled_task_system_audit": "NO MATCH"
+    },
+    "SourceFile": "fixture",
+    "EventID": 4688,
+    "Computer": "srv03.lab.local",
+    "Image": "C:\\Windows\\System32\\findstr.exe",
+    "CommandLine": "findstr.exe /c:\"<UserId>S-1-5-18</UserId>\" /c:\"<Interval>PT1M</Interval>\" tasks.xml",
+    "ParentImage": "C:\\Windows\\System32\\cmd.exe",
+    "User": "LAB\\admin"
   }
 ]

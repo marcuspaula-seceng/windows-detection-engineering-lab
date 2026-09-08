@@ -1,0 +1,57 @@
+title: Scheduled Task Registered To Run As SYSTEM With Persistent Trigger
+id: 3d7a91c6-08fe-4b52-b1d4-6e2c9f04a8b3
+status: experimental
+description: |
+    Deteta, no evento de auditoria 4698 ("a scheduled task was created"), o registo de uma
+    tarefa cujo principal e a conta SYSTEM e cujo gatilho e persistente -- repeticao de poucos
+    minutos, arranque da maquina, ou inicio de sessao.
+
+    Complementa, sem substituir, a regra de process_creation. A regra de processo ve COMO a
+    tarefa foi criada (schtasks.exe). Esta ve QUE a tarefa foi criada, e apanha o caso em que
+    a criacao passa por Register-ScheduledTask ou pela API do Task Scheduler, sem nunca lancar
+    schtasks.exe.
+
+    Todos os padroes procurados foram lidos do TaskContent real do sample publico
+    "ID4688-4698 Persistent scheduled task with SYSTEM privileges creation.evtx"
+    (mdecrevoisier/EVTX-to-MITRE-Attack, CC0), excepto BootTrigger e LogonTrigger, que sao
+    os equivalentes documentados de /sc onstart e /sc onlogon no schema do Task Scheduler.
+references:
+    - https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4698
+    - https://learn.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-schema
+    - https://attack.mitre.org/techniques/T1053/005/
+author: Marcus Paula
+date: 2026-09-07
+tags:
+    - attack.persistence
+    - attack.privilege-escalation
+    - attack.t1053.005
+logsource:
+    product: windows
+    service: security
+    definition: 'Requires "Audit Other Object Access Events" to be enabled. Without it, no 4698 is written and this rule is silent.'
+detection:
+    selection_event:
+        EventID: 4698
+    selection_system_principal:
+        TaskContent|contains:
+            - '<UserId>S-1-5-18</UserId>'
+            - '<UserId>NT AUTHORITY\SYSTEM</UserId>'
+            - '<UserId>SYSTEM</UserId>'
+    selection_persistent_trigger:
+        TaskContent|contains:
+            - '<Interval>PT1M</Interval>'
+            - '<Interval>PT2M</Interval>'
+            - '<Interval>PT3M</Interval>'
+            - '<Interval>PT5M</Interval>'
+            - '<BootTrigger>'
+            - '<LogonTrigger>'
+    filter_windows_own_tasks:
+        TaskName|startswith: '\Microsoft\'
+    condition: all of selection_* and not filter_windows_own_tasks
+falsepositives:
+    - Agentes de monitorizacao e gestao de configuracao (SCCM, Intune, Ansible, ferramentas de
+      backup) que registam tarefas SYSTEM com gatilho de arranque. Sao a principal fonte de
+      ruido desta regra e devem ser filtrados por TaskName numa organizacao concreta.
+    - Instaladores de software que registam tarefas de atualizacao a correr no arranque.
+    - Tarefas de manutencao internas criadas por automacao propria da organizacao.
+level: medium

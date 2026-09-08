@@ -32,6 +32,9 @@ question that applies to other work.
 | PyYAML | runtime dependency | MIT | Permissive. Not vendored — installed from PyPI. |
 | GitHub Actions (`checkout`, `setup-python`) | CI | MIT | Not distributed with this code. |
 | MITRE ATT&CK identifiers | `T1053.005` etc. | ATT&CK Terms of Use | Free use with attribution. Referenced, not reproduced. |
+| `tools/schema/sigma-detection-rule-schema.json` | `SigmaHQ/sigma-specification` | specification, not rule content | Vendored with commit and hash recorded in `tools/schema/PROVENANCE.md`. The **specification** and SigmaHQ **rule content** are different things under different terms. |
+| `sigma-cli` 3.1.0, `pySigma` | CI only | LGPL-2.1 / LGPL-3.0 family | Installed in the runner, never vendored or redistributed. |
+| `pySigma-validators-sigmahq` 0.21.0 | CI only | SigmaHQ project | Installed in the runner. Report-only step. |
 
 **No dependency imposes a licence on this repository.** CC0 in particular imposes nothing.
 
@@ -41,10 +44,24 @@ question that applies to other work.
 requires attribution when rules are redistributed or modified. The GitHub API reports it as
 `NOASSERTION` because DRL is not an SPDX-listed licence, so automated licence checks miss it.
 
-`proc_creation_win_schtasks_creation.yml` was read and analysed for study. **It was not copied,
-adapted, or used as a base.** The rule in `sigma/` addresses a different, narrower condition
-and was written independently. If any SigmaHQ rule is ever vendored into this repository, DRL
-attribution becomes mandatory.
+Two SigmaHQ rules were read and analysed for study:
+
+- `proc_creation_win_schtasks_creation.yml` (`92626ddd-...`, Florian Roth)
+- `win_security_susp_scheduled_task_creation.yml` (`3a734d25-...`, Nasreddine Bencherchali)
+
+**Neither was copied, adapted, or used as a base.** Both were read *after* the corresponding
+rule here was written, as prior-art review — to check whether the concept already existed, what
+false positives mature rules document, and whether an obvious condition was being missed. The
+comparison and its result are recorded in the README.
+
+Studying, comparing architecture, checking for duplicate concepts and citing references are all
+permitted. Copying detection blocks, comments or text is not done here. If any SigmaHQ rule is
+ever vendored into this repository, DRL attribution becomes mandatory.
+
+```text
+Original project rules authored independently.
+No SigmaHQ rule copied.
+```
 
 ## 3. Options
 
@@ -83,7 +100,7 @@ employers in Ireland.
 Reasoning: it is permissive enough that nobody hesitates, familiar enough that nobody has to
 think about it, and the patent grant reads as commercial awareness rather than naivety. The
 dual arrangement (E) is more correct in principle, but explaining a licence split on a
-repository with one rule in it costs more attention than it earns.
+repository of this size costs more attention than it earns.
 
 **This is a recommendation, not a decision.** No `LICENSE` file has been created.
 

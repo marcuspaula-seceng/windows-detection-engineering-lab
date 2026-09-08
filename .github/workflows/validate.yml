@@ -19,7 +19,12 @@ permissions:
   contents: read
 
 jobs:
-  validate:
+  # ---------------------------------------------------------------------------
+  # Gate do projeto: forma da regra, schema oficial do Sigma, e comportamento
+  # contra as fixtures. Tudo aqui e bloqueante.
+  # ---------------------------------------------------------------------------
+  project-tests:
+    name: project tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -31,13 +36,15 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install --require-hashes=false -r requirements.txt
+        run: pip install -r requirements.txt
 
-      - name: Rule files are valid YAML and carry the required fields
+      - name: Project rule policy (stricter than the Sigma schema)
         run: |
           python - <<'PY'
           import pathlib, sys, yaml
 
+          # O schema oficial so exige title, logsource e detection.
+          # Este projeto exige mais -- em particular, falsepositives nao vazio.
           REQUIRED = {'title', 'id', 'status', 'description', 'author', 'date',
                       'logsource', 'detection', 'falsepositives', 'level'}
           LEVELS = {'informational', 'low', 'medium', 'high', 'critical'}
@@ -66,6 +73,9 @@ jobs:
           sys.exit(1 if failed else 0)
           PY
 
+      - name: Official Sigma JSON Schema
+        run: python tools/validate_schema.py
+
       - name: Rules behave as declared against the fixtures
         run: python tools/run_tests.py
 
@@ -73,3 +83,88 @@ jobs:
         run: |
           echo "commit: $GITHUB_SHA"
           echo "ref:    $GITHUB_REF"
+
+  # ---------------------------------------------------------------------------
+  # Validacao independente com o tooling OFICIAL do SigmaHQ.
+  #
+  # Bloqueante   -- o pySigma tem de conseguir PARSEAR as regras. Se nao consegue,
+  #                 nao sao regras Sigma validas, e isso e um defeito nosso.
+  # Report only  -- os validadores da SigmaHQ codificam as convencoes do REPOSITORIO
+  #                 SigmaHQ (formato do nome de ficheiro, ordem de tags, estilo do
+  #                 titulo). Este repositorio nao e o deles. As observacoes ficam
+  #                 registadas no log; nao falham a build.
+  # ---------------------------------------------------------------------------
+  sigma-validation:
+    name: sigma independent validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install official Sigma tooling (pinned)
+        run: |
+          pip install "sigma-cli==3.1.0"
+          echo "--- resolved versions ---"
+          pip show sigma-cli pysigma | grep -E '^(Name|Version):'
+
+      - name: Toolchain probe
+        run: |
+          sigma --version
+          sigma check --help
+
+      - name: pySigma parse (BLOCKING)
+        run: |
+          python - <<'PY'
+          import pathlib, sys
+          from sigma.collection import SigmaCollection
+
+          failed = False
+          for path in sorted(pathlib.Path('sigma').glob('*.yml')):
+              try:
+                  collection = SigmaCollection.from_yaml(path.read_text(encoding='utf-8'))
+                  for rule in collection.rules:
+                      print(f'{path.name}: parsed OK  '
+                            f'id={rule.id}  level={rule.level}  '
+                            f'logsource={rule.logsource}')
+              except Exception as error:
+                  failed = True
+                  print(f'{path.name}: PARSE FAILED  {type(error).__name__}: {error}')
+
+          sys.exit(1 if failed else 0)
+          PY
+
+      - name: Install SigmaHQ validators (pinned)
+        run: pip install "pysigma-validators-sigmahq==0.21.0"
+
+      - name: sigma check with SigmaHQ validators (REPORT ONLY)
+        id: sigma_check
+        continue-on-error: true
+        run: |
+          set +e
+          sigma check sigma/
+          echo "sigma_check_exit=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Validation summary
+        run: |
+          {
+            echo "## Sigma independent validation"
+            echo ""
+            echo '```text'
+            echo "sigma-cli   : $(pip show sigma-cli | awk '/^Version:/{print $2}')"
+            echo "pySigma     : $(pip show pysigma  | awk '/^Version:/{print $2}')"
+            echo "validators  : $(pip show pysigma-validators-sigmahq | awk '/^Version:/{print $2}')"
+            echo ""
+            echo "pySigma parse            : PASS (blocking step succeeded)"
+            echo "sigma check (SigmaHQ)    : exit ${{ steps.sigma_check.outputs.sigma_check_exit }} -- REPORT ONLY"
+            echo ""
+            echo "commit: $GITHUB_SHA"
+            echo '```'
+            echo ""
+            echo "\`sigma check\` runs SigmaHQ repository conventions. A non-zero exit is"
+            echo "recorded, not suppressed, and does not mean the rules are invalid Sigma."
+          } >> "$GITHUB_STEP_SUMMARY"
