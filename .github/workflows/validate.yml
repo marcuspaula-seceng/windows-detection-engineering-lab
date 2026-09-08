@@ -114,7 +114,7 @@ jobs:
 
       - name: Toolchain probe
         run: |
-          sigma --version
+          sigma --help
           sigma check --help
 
       - name: pySigma parse (BLOCKING)
