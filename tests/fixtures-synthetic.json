@@ -1,0 +1,90 @@
+[
+  {
+    "_fixture": "POSITIVO — copia do evento real do sample, para o caso base",
+    "_expected": "MATCH",
+    "SourceFile": "fixture",
+    "EventID": 4688,
+    "Computer": "srvdefender01.offsec.lan",
+    "Image": "C:\\Windows\\System32\\schtasks.exe",
+    "CommandLine": "\"C:\\Windows\\system32\\schtasks.exe\" /create /sc minute /mo 1 /tn eviltask /tr C:\\tools\\shell.cmd /ru SYSTEM",
+    "ParentImage": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "User": "OFFSEC\\admmig"
+  },
+  {
+    "_fixture": "POSITIVO — variante: /ru \"NT AUTHORITY\\SYSTEM\" e /sc onstart",
+    "_expected": "MATCH",
+    "SourceFile": "fixture",
+    "EventID": 4688,
+    "Computer": "srv02.lab.local",
+    "Image": "C:\\Windows\\SysWOW64\\schtasks.exe",
+    "CommandLine": "schtasks.exe /create /tn Updater /sc onstart /tr C:\\Users\\Public\\svc.exe /ru \"NT AUTHORITY\\SYSTEM\" /f",
+    "ParentImage": "C:\\Windows\\System32\\cmd.exe",
+    "User": "LAB\\u1"
+  },
+  {
+    "_fixture": "NEGATIVO por gatilho — SYSTEM mas semanal; manutencao plausivel",
+    "_expected": "NO MATCH",
+    "SourceFile": "fixture",
+    "EventID": 4688,
+    "Computer": "srv02.lab.local",
+    "Image": "C:\\Windows\\System32\\schtasks.exe",
+    "CommandLine": "schtasks.exe /create /tn WeeklyCleanup /sc weekly /d SUN /tr C:\\Scripts\\cleanup.ps1 /ru SYSTEM",
+    "ParentImage": "C:\\Windows\\System32\\cmd.exe",
+    "User": "LAB\\admin"
+  },
+  {
+    "_fixture": "NEGATIVO por conta — alta frequencia mas conta de utilizador, sem privilegio",
+    "_expected": "NO MATCH",
+    "SourceFile": "fixture",
+    "EventID": 4688,
+    "Computer": "wks10.lab.local",
+    "Image": "C:\\Windows\\System32\\schtasks.exe",
+    "CommandLine": "schtasks.exe /create /tn SyncNotes /sc minute /mo 15 /tr C:\\Tools\\sync.exe /ru LAB\\u1",
+    "ParentImage": "C:\\Windows\\explorer.exe",
+    "User": "LAB\\u1"
+  },
+  {
+    "_fixture": "NEGATIVO pelo FILTRO — instalador legitimo em Program Files cria tarefa SYSTEM onstart. Testa o ramo do filtro, nao a selection.",
+    "_expected": "NO MATCH",
+    "SourceFile": "fixture",
+    "EventID": 4688,
+    "Computer": "wks10.lab.local",
+    "Image": "C:\\Windows\\System32\\schtasks.exe",
+    "CommandLine": "schtasks.exe /create /tn VendorUpdate /sc onstart /tr \"C:\\Program Files\\Vendor\\update.exe\" /ru SYSTEM /f",
+    "ParentImage": "C:\\Program Files\\Vendor\\setup.exe",
+    "User": "LAB\\admin"
+  },
+  {
+    "_fixture": "EVASAO — mesmo comportamento que o positivo 1, mas o filtro do fabricante e contornado por ParentImage ausente. Este DEVIA casar e casa; esta aqui para mostrar que o filtro nao protege o atacante.",
+    "_expected": "MATCH",
+    "SourceFile": "fixture",
+    "EventID": 4688,
+    "Computer": "srv03.lab.local",
+    "Image": "C:\\Windows\\System32\\schtasks.exe",
+    "CommandLine": "schtasks.exe /create /tn Updater /sc minute /mo 1 /tr C:\\Windows\\Temp\\a.cmd /ru SYSTEM",
+    "ParentImage": null,
+    "User": "LAB\\svc-backup"
+  },
+  {
+    "_fixture": "FALSO NEGATIVO CONHECIDO — schtasks invocado por caminho relativo com aspas diferentes e /RU em maiusculas. A regra usa comparacao insensivel a maiusculas, entao ISTO CASA. Fixture existe para o provar, nao para o assumir.",
+    "_expected": "MATCH",
+    "SourceFile": "fixture",
+    "EventID": 4688,
+    "Computer": "srv03.lab.local",
+    "Image": "C:\\Windows\\System32\\SCHTASKS.EXE",
+    "CommandLine": "SCHTASKS.EXE /CREATE /TN Updater /SC MINUTE /MO 1 /TR C:\\Windows\\Temp\\a.cmd /RU SYSTEM",
+    "ParentImage": null,
+    "User": "LAB\\svc-backup"
+  },
+  {
+    "_fixture": "FALSO NEGATIVO REAL — a tarefa e criada pela API do Task Scheduler, sem schtasks.exe. A regra NAO ve isto, e nenhuma regra baseada em process_creation ve. Limitacao declarada.",
+    "_expected": "NO MATCH",
+    "SourceFile": "fixture",
+    "EventID": 4688,
+    "Computer": "srv03.lab.local",
+    "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "CommandLine": "powershell.exe -c Register-ScheduledTask -TaskName Updater -Trigger $t -Principal $p",
+    "ParentImage": null,
+    "User": "LAB\\svc-backup"
+  }
+]

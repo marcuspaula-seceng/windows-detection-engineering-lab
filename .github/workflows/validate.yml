@@ -1,0 +1,75 @@
+name: validate-detections
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'sigma/**'
+      - 'tools/**'
+      - 'tests/**'
+      - 'requirements.txt'
+      - '.github/workflows/validate.yml'
+  pull_request:
+    paths:
+      - 'sigma/**'
+      - 'tools/**'
+      - 'tests/**'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install --require-hashes=false -r requirements.txt
+
+      - name: Rule files are valid YAML and carry the required fields
+        run: |
+          python - <<'PY'
+          import pathlib, sys, yaml
+
+          REQUIRED = {'title', 'id', 'status', 'description', 'author', 'date',
+                      'logsource', 'detection', 'falsepositives', 'level'}
+          LEVELS = {'informational', 'low', 'medium', 'high', 'critical'}
+          STATUSES = {'experimental', 'test', 'stable', 'deprecated', 'unsupported'}
+
+          failed = False
+          rules = sorted(pathlib.Path('sigma').glob('*.yml'))
+          if not rules:
+              print('no rules found'); sys.exit(1)
+
+          for path in rules:
+              rule = yaml.safe_load(path.read_text(encoding='utf-8'))
+              missing = REQUIRED - set(rule)
+              if missing:
+                  print(f'{path.name}: missing fields {sorted(missing)}'); failed = True
+              if rule.get('level') not in LEVELS:
+                  print(f'{path.name}: invalid level {rule.get("level")!r}'); failed = True
+              if rule.get('status') not in STATUSES:
+                  print(f'{path.name}: invalid status {rule.get("status")!r}'); failed = True
+              if 'condition' not in rule.get('detection', {}):
+                  print(f'{path.name}: detection has no condition'); failed = True
+              if not rule.get('falsepositives'):
+                  print(f'{path.name}: falsepositives must not be empty'); failed = True
+              print(f'{path.name}: OK')
+
+          sys.exit(1 if failed else 0)
+          PY
+
+      - name: Rules behave as declared against the fixtures
+        run: python tools/run_tests.py
+
+      - name: Record the exact commit under test
+        run: |
+          echo "commit: $GITHUB_SHA"
+          echo "ref:    $GITHUB_REF"

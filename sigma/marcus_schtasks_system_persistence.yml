@@ -1,0 +1,56 @@
+title: Scheduled Task Created To Run As SYSTEM With High-Frequency Trigger
+id: 8f1c5a2e-4d3b-4a17-9c62-1b7e0a5d3f41
+status: experimental
+description: |
+    Deteta a criacao de uma tarefa agendada, via schtasks.exe, que corre com a conta SYSTEM
+    e com um gatilho de alta frequencia ou de arranque (minute, onstart, onlogon).
+
+    Cada elemento isolado e legitimo. E a combinacao -- privilegio maximo mais reexecucao
+    persistente -- que raramente aparece em administracao normal e frequentemente aparece em
+    execucao remota e em persistencia.
+
+    Escrita a partir de observacao propria: o sample publico
+    "ID4688-4698 Persistent scheduled task with SYSTEM privileges creation.evtx"
+    (mdecrevoisier/EVTX-to-MITRE-Attack, CC0).
+references:
+    - https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/schtasks-create
+    - https://attack.mitre.org/techniques/T1053/005/
+author: Marcus Paula
+date: 2026-09-07
+tags:
+    - attack.persistence
+    - attack.privilege-escalation
+    - attack.t1053.005
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_tool:
+        Image|endswith: '\schtasks.exe'
+        CommandLine|contains|all:
+            - ' /create '
+            - ' /ru '
+    selection_system_account:
+        CommandLine|contains:
+            - ' /ru SYSTEM'
+            - ' /ru "SYSTEM"'
+            - ' /ru NT AUTHORITY\SYSTEM'
+            - ' /ru "NT AUTHORITY\SYSTEM"'
+    selection_frequent_trigger:
+        CommandLine|contains:
+            - ' /sc minute'
+            - ' /sc onstart'
+            - ' /sc onlogon'
+    filter_installer_parent:
+        ParentImage|startswith:
+            - 'C:\Program Files\'
+            - 'C:\Program Files (x86)\'
+    condition: all of selection_* and not filter_installer_parent
+falsepositives:
+    - Instaladores de software que criam tarefas de manutencao a correr como SYSTEM.
+      O filtro por ParentImage cobre parte destes casos, mas so quando o campo existe.
+    - Ferramentas de gestao de configuracao (SCCM, Intune, Ansible) que legitimamente criam
+      tarefas SYSTEM. Devem ser filtradas por ParentImage numa organizacao concreta.
+    - Scripts de administracao internos. Um ambiente com automacao propria pode gerar isto
+      de forma rotineira -- e a razao pela qual o nivel nao e alto.
+level: medium

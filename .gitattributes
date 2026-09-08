@@ -1,0 +1,4 @@
+# CI corre em Linux e o workflow tem heredocs de shell. Tudo LF no repositorio.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.evtx binary
