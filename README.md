@@ -300,3 +300,9 @@ Separately, a validator rejected two rules when the defect was in the validator 
 produced the same standing rule: check what is doing the testing before changing what is being
 tested. Event schemas also differ between hosts, so a rule that depends on a field absent from
 some hosts fails silently on exactly those hosts.
+
+## Technologies
+
+Sigma rule format · pySigma with a version pinned by resolved release · Windows Event Log
+(Security and Sysmon-style telemetry) · JSON Schema validation against an upstream definition
+pinned by commit and hash · Python 3 · GitHub Actions
