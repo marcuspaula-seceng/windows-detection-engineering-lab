@@ -280,3 +280,23 @@ those hosts.
 
 This is a laboratory. Rules have not been deployed to a production SIEM, and no production
 telemetry was used. Detection coverage is demonstrative, not exhaustive.
+
+## Engineering timeline
+
+**Phase 1 — Security baseline.** Start from real Windows event data rather than from a rule
+idea, and record where that data came from, with checksums, so any result can be reproduced.
+
+**Phase 2 — Investigation.** Build the true and false positive matrix before writing the rule.
+Decide explicitly which behaviours must alert and which must stay silent, then keep fixtures
+for both.
+
+**Phase 3 — Automation and validation.** Validate rule structure against the official upstream
+JSON schema, pinned by commit and hash rather than by a moving tag, and run the whole thing in
+CI with a version-pinned toolchain.
+
+**Phase 4 — Outcome and lessons learned.** A four-hundred-character truncation in a field of
+over sixteen hundred left the entire suite green while the rule silently never fired.
+Separately, a validator rejected two rules when the defect was in the validator itself. Both
+produced the same standing rule: check what is doing the testing before changing what is being
+tested. Event schemas also differ between hosts, so a rule that depends on a field absent from
+some hosts fails silently on exactly those hosts.
