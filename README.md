@@ -236,3 +236,47 @@ applies and no reuse rights are granted.
 ## Author
 
 Marcus Paula — Security & Infrastructure Engineer · Dublin, Ireland
+
+
+## Architecture
+
+```mermaid
+flowchart TD
+    A[Real Windows event data] --> B[Fixtures with recorded SHA-256]
+    B --> C[Detection rule]
+    C --> D[Schema validation, upstream pinned by commit and hash]
+    C --> E[True and false positive matrix]
+    D --> F{CI gate}
+    E --> F
+    F -->|pass| G[Rule accepted]
+    F -->|fail| H[Rule rejected, reason recorded]
+```
+
+## Testing and validation
+
+| Layer | What it checks |
+|---|---|
+| Schema validation | Rule structure against the official upstream JSON schema, pinned by commit and hash |
+| Positive fixtures | Malicious behaviours the rule must detect |
+| Negative fixtures | Benign behaviours that must not raise an alert |
+| CI | Toolchain pinned to a resolved version, run on every push |
+
+Source data is public-domain with recorded SHA-256 and documented provenance.
+
+## Lessons learned
+
+A field truncation at four hundred characters, in a field of over sixteen hundred, left the
+entire suite green while the rule silently never fired. Separately, a validator rejected two
+rules when the defect was in the validator itself, not in the artefacts under test.
+
+Both produced a standing rule here: **verify what is doing the testing before changing what is
+being tested**, and treat a green suite as a claim rather than a result.
+
+Event schemas were also observed to differ between hosts, with the same event carrying a
+different field count. Rules that depend on a field absent from some hosts fail silently on
+those hosts.
+
+## Limitations
+
+This is a laboratory. Rules have not been deployed to a production SIEM, and no production
+telemetry was used. Detection coverage is demonstrative, not exhaustive.
