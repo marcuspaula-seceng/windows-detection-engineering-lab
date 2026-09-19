@@ -79,6 +79,9 @@ jobs:
       - name: Rules behave as declared against the fixtures
         run: python tools/run_tests.py
 
+      - name: Unsupported evaluator syntax is rejected
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+
       - name: Record the exact commit under test
         run: |
           echo "commit: $GITHUB_SHA"

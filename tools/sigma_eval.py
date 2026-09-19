@@ -28,9 +28,8 @@ import sys
 
 import yaml
 
-UNSUPPORTED_MODIFIERS = {
-    're', 'base64', 'base64offset', 'cidr', 'lt', 'lte', 'gt', 'gte',
-    'fieldref', 'expand', 'windash', 'utf16', 'utf16le', 'utf16be', 'wide',
+SUPPORTED_MODIFIER_SEQUENCES = {
+    (), ('contains',), ('contains', 'all'), ('startswith',), ('endswith',),
 }
 
 
@@ -59,16 +58,19 @@ def match_value(actual, expected, modifiers):
 
 def match_field(event, field_spec, expected):
     """Avalia 'Campo|modificadores: valor(es)' contra um evento."""
+    if not isinstance(field_spec, str) or not field_spec.split('|')[0]:
+        raise UnsupportedRule('nome de campo invalido')
     parts = field_spec.split('|')
     field = parts[0]
     modifiers = [p.lower() for p in parts[1:]]
 
-    bad = set(modifiers) & UNSUPPORTED_MODIFIERS
-    if bad:
-        raise UnsupportedRule(f'modificador nao suportado: {sorted(bad)} em {field_spec!r}')
+    if tuple(modifiers) not in SUPPORTED_MODIFIER_SEQUENCES:
+        raise UnsupportedRule(f'modificadores nao suportados em {field_spec!r}')
 
     actual = event.get(field)
     values = expected if isinstance(expected, list) else [expected]
+    if not values or any(v is None or not isinstance(v, (str, int, float, bool)) for v in values):
+        raise UnsupportedRule(f'valor nao suportado em {field_spec!r}')
 
     if 'all' in modifiers:
         # todos os valores tem de casar -- AND dentro do campo
@@ -80,10 +82,13 @@ def match_field(event, field_spec, expected):
 def match_block(event, block):
     """Um bloco de detection. Varios campos = AND. Lista de mapas = OR."""
     if isinstance(block, list):
-        return any(match_block(event, item) for item in block)
-    if not isinstance(block, dict):
+        if not block:
+            raise UnsupportedRule('bloco vazio')
+        # Evaluate every alternative: unsupported syntax must not be hidden by a match.
+        return any([match_block(event, item) for item in block])
+    if not isinstance(block, dict) or not block:
         raise UnsupportedRule(f'forma de bloco nao suportada: {type(block).__name__}')
-    return all(match_field(event, spec, value) for spec, value in block.items())
+    return all([match_field(event, spec, value) for spec, value in block.items()])
 
 
 def resolve_condition(condition, blocks, event):
@@ -116,7 +121,10 @@ def resolve_condition(condition, blocks, event):
     if not re.fullmatch(r'[\w\s()]*', expression):
         raise UnsupportedRule(f'condition com sintaxe nao suportada: {condition!r}')
 
-    return bool(eval(expression, {'__builtins__': {}}, values))  # noqa: S307 - expressao validada acima
+    try:
+        return bool(eval(expression, {'__builtins__': {}}, values))  # noqa: S307 - expressao validada acima
+    except (NameError, SyntaxError, TypeError) as error:
+        raise UnsupportedRule(f'condition nao suportada: {condition!r}') from error
 
 
 def main():
@@ -135,6 +143,13 @@ def main():
 
     detection = dict(rule['detection'])
     condition = detection.pop('condition')
+
+    # Validate the rule even when the event file is empty.
+    try:
+        resolve_condition(condition, detection, {})
+    except UnsupportedRule as error:
+        print(f'REGRA RECUSADA: {error}')
+        return 3
 
     print(f"regra      : {rule['title']}")
     print(f"nivel      : {rule.get('level', '-')}   status: {rule.get('status', '-')}")
