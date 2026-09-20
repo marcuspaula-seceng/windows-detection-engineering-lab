@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Valida as regras contra o JSON Schema OFICIAL do Sigma.
+"""Validate the rules against the OFFICIAL Sigma JSON Schema.
 
 O schema vem de SigmaHQ/sigma-specification, `json-schema/sigma-detection-rule-schema.json`,
-e esta versionado em tools/schema/ com a origem registada em tools/schema/PROVENANCE.md.
+and is pinned under tools/schema/ with its origin recorded in tools/schema/PROVENANCE.md.
 
-Isto e validacao independente: o schema nao e meu. Nao substitui `sigma check` do sigma-cli
--- verifica a FORMA da regra, nao se o pySigma a consegue compilar para um backend.
+This is independent validation: the schema is not mine. It does not replace sigma-cli's
+`sigma check` -- it checks the SHAPE of a rule, not whether pySigma can compile it.
 
     python tools/validate_schema.py
 """
@@ -25,12 +25,12 @@ RULES_DIR = ROOT / 'sigma'
 
 
 def to_jsonable(value):
-    """Converte tipos que o YAML produz e o JSON nao tem.
+    """Convert types that YAML produces and JSON does not have.
 
-    O YAML resolve `date: 2026-09-07` sem aspas para datetime.date. O JSON Schema espera
-    uma string no formato YYYY-MM-DD. Sem esta conversao, uma regra perfeitamente valida --
-    escrita exactamente como as regras da SigmaHQ -- reprova por um defeito do validador,
-    nao da regra. Foi o que aconteceu na primeira execucao.
+    YAML resolves an unquoted `date: 2026-09-07` to datetime.date. The JSON Schema expects
+    a YYYY-MM-DD string. Without this conversion a perfectly valid rule -- written exactly
+    as SigmaHQ writes its own rules -- fails because of a validator defect, not a rule
+    defect. That is what happened on the first run.
     """
     if isinstance(value, (datetime.date, datetime.datetime)):
         return value.isoformat()
@@ -43,7 +43,7 @@ def to_jsonable(value):
 
 def main():
     if not SCHEMA.exists():
-        print(f'schema nao encontrado: {SCHEMA}')
+        print(f'schema not found: {SCHEMA}')
         return 1
 
     schema = json.load(io.open(SCHEMA, encoding='utf-8'))
@@ -58,7 +58,7 @@ def main():
 
     rules = sorted(RULES_DIR.glob('*.yml'))
     if not rules:
-        print('nenhuma regra encontrada em', RULES_DIR)
+        print('no rules found in', RULES_DIR)
         return 1
 
     failed = 0
@@ -67,7 +67,7 @@ def main():
         errors = sorted(validator.iter_errors(rule), key=lambda e: list(e.path))
         if errors:
             failed += 1
-            print(f'{path.name}: {len(errors)} erro(s)')
+            print(f'{path.name}: {len(errors)} error(s)')
             for error in errors:
                 location = '/'.join(str(part) for part in error.path) or '(raiz)'
                 print(f'    {location}: {error.message[:200]}')
@@ -75,7 +75,7 @@ def main():
             print(f'{path.name}: VALIDO')
 
     print()
-    print(f"{len(rules) - failed}/{len(rules)} regras validam contra o schema oficial")
+    print(f"{len(rules) - failed}/{len(rules)} rules validate against the official schema")
     return 1 if failed else 0
 
 

@@ -2,14 +2,14 @@ title: Scheduled Task Created To Run As SYSTEM With High-Frequency Trigger
 id: 8f1c5a2e-4d3b-4a17-9c62-1b7e0a5d3f41
 status: experimental
 description: |
-    Deteta a criacao de uma tarefa agendada, via schtasks.exe, que corre com a conta SYSTEM
-    e com um gatilho de alta frequencia ou de arranque (minute, onstart, onlogon).
+    Detects the creation of a scheduled task, via schtasks.exe, that runs as the SYSTEM
+    account with a high-frequency or startup trigger (minute, onstart, onlogon).
 
-    Cada elemento isolado e legitimo. E a combinacao -- privilegio maximo mais reexecucao
-    persistente -- que raramente aparece em administracao normal e frequentemente aparece em
-    execucao remota e em persistencia.
+    Each element on its own is legitimate. It is the combination -- highest privilege plus
+    persistent re-execution -- that rarely appears in normal administration and often appears
+    in remote execution and in persistence.
 
-    Escrita a partir de observacao propria: o sample publico
+    Written from first-hand observation of the public sample
     "ID4688-4698 Persistent scheduled task with SYSTEM privileges creation.evtx"
     (mdecrevoisier/EVTX-to-MITRE-Attack, CC0).
 references:
@@ -47,10 +47,10 @@ detection:
             - 'C:\Program Files (x86)\'
     condition: all of selection_* and not filter_installer_parent
 falsepositives:
-    - Instaladores de software que criam tarefas de manutencao a correr como SYSTEM.
-      O filtro por ParentImage cobre parte destes casos, mas so quando o campo existe.
-    - Ferramentas de gestao de configuracao (SCCM, Intune, Ansible) que legitimamente criam
-      tarefas SYSTEM. Devem ser filtradas por ParentImage numa organizacao concreta.
-    - Scripts de administracao internos. Um ambiente com automacao propria pode gerar isto
-      de forma rotineira -- e a razao pela qual o nivel nao e alto.
+    - Software installers that create maintenance tasks running as SYSTEM. The ParentImage
+      filter covers some of these cases, but only when the field is present.
+    - Configuration-management tools (SCCM, Intune, Ansible) that legitimately create SYSTEM
+      tasks. They should be filtered by ParentImage in a specific organisation.
+    - Internal administration scripts. An environment with its own automation can produce
+      this routinely -- which is why the level is not high.
 level: medium

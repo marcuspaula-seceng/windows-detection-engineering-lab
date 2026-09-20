@@ -1,43 +1,43 @@
 <#
 .SYNOPSIS
-    Normaliza eventos 4688 e 4698 de ficheiros EVTX para taxonomia Sigma.
+    Normalises 4688 and 4698 events from EVTX files into the Sigma taxonomy.
 
 .DESCRIPTION
-    Isto e, na pratica, meio backend de Sigma: a parte que traduz nomes de campo.
-    A outra metade (avaliar a logica da regra) esta em sigma_eval.py.
+    This is, in practice, half of a Sigma backend: the part that translates field names.
+    The other half, evaluating the rule logic, lives in sigma_eval.py.
 
-    Mapeamento aplicado -- EVTX 4688 -> Sigma process_creation:
+    Mapping applied -- EVTX 4688 -> Sigma process_creation:
 
         Image            <- NewProcessName
         CommandLine      <- CommandLine
-        ParentImage      <- ParentProcessName     (NAO existe em todos os schemas)
+        ParentImage      <- ParentProcessName     (NOT present in every schema)
         User             <- SubjectDomainName\SubjectUserName
         ProcessId        <- NewProcessId
-        ParentProcessId  <- ProcessId             <-- ATENCAO
+        ParentProcessId  <- ProcessId             <-- CAREFUL
 
-    A ultima linha e a armadilha. No EVTX, "ProcessId" e o processo CRIADOR, nao o criado.
-    Quem mapeia ProcessId -> ProcessId inverte a arvore inteira e nao recebe erro nenhum.
+    The last line is the trap. In EVTX, "ProcessId" is the CREATING process, not the created
+    one. Mapping ProcessId -> ProcessId inverts the whole tree and raises no error at all.
 
-    Evento 4698 -- "a scheduled task was created" -- usa a logsource windows/security,
-    onde o campo de correlacao e o proprio EventID. Campos emitidos: TaskName, TaskContent.
+    Event 4698 -- "a scheduled task was created" -- uses the windows/security logsource,
+    where the correlating field is EventID itself. Fields emitted: TaskName, TaskContent.
 
-    TaskContent e o XML integral da tarefa e passa facilmente de 1600 caracteres. Truncá-lo
-    ao limite normal destruiria a deteccao, entao tem limite proprio (-MaxTaskContentLength).
-    E XML de configuracao, nao texto de payload -- a razao do truncamento geral nao se aplica.
+    TaskContent is the task's full XML and easily exceeds 1600 characters. Truncating it to
+    the normal limit would destroy detection, so it has its own limit (-MaxTaskContentLength).
+    It is configuration XML, not payload text -- the reason for the general truncation does not apply.
 
-    SO LEITURA. Nao escreve no Event Log, nao altera politica de auditoria,
-    nao executa nada do conteudo dos eventos.
+    READ ONLY. It does not write to the Event Log, does not change audit policy,
+    and does not execute anything from the event content.
 
 .PARAMETER Path
-    Ficheiro .evtx ou pasta com ficheiros .evtx.
+    An .evtx file, or a folder containing .evtx files.
 
 .PARAMETER OutFile
-    Destino JSON.
+    JSON destination.
 
 .PARAMETER MaxFieldLength
-    Trunca campos longos. Existe por um motivo concreto: escrever a linha de comando
-    integral de um payload em disco fez o antivirus do host bloquear a escrita.
-    Ver DAY-02-EVTX-CORRELATION.md, seccao 8.
+    Truncates long fields. It exists for a concrete reason: writing a payload's full
+    command line to disk made the host antivirus block the write.
+    See DAY-02-EVTX-CORRELATION.md, section 8.
 #>
 [CmdletBinding()]
 param(

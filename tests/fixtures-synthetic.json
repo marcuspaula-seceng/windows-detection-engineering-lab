@@ -1,6 +1,6 @@
 [
   {
-    "_fixture": "POSITIVO — copia do evento real do sample, para o caso base",
+    "_fixture": "POSITIVE — copy of the real event from the sample, for the base case",
     "_behaviour": "behaviour-01-schtasks-system-minute",
     "_source": "derived from real CC0 sample event",
     "_malicious": true,
@@ -17,7 +17,7 @@
     "User": "OFFSEC\\admmig"
   },
   {
-    "_fixture": "POSITIVO — variante: /ru \"NT AUTHORITY\\SYSTEM\" e /sc onstart",
+    "_fixture": "POSITIVE — variant: /ru \"NT AUTHORITY\\SYSTEM\" and /sc onstart",
     "_behaviour": "behaviour-02-schtasks-system-onstart",
     "_source": "SYNTHETIC FIXTURE",
     "_malicious": true,
@@ -34,7 +34,7 @@
     "User": "LAB\\u1"
   },
   {
-    "_fixture": "NEGATIVO por gatilho — SYSTEM mas semanal; manutencao plausivel",
+    "_fixture": "NEGATIVE by trigger — SYSTEM but weekly; plausible maintenance",
     "_behaviour": "behaviour-03-weekly-maintenance",
     "_source": "SYNTHETIC FIXTURE",
     "_malicious": false,
@@ -51,7 +51,7 @@
     "User": "LAB\\admin"
   },
   {
-    "_fixture": "NEGATIVO por conta — alta frequencia mas conta de utilizador, sem privilegio",
+    "_fixture": "NEGATIVE by account — high frequency but a user account, no privilege",
     "_behaviour": "behaviour-04-user-frequent-task",
     "_source": "SYNTHETIC FIXTURE",
     "_malicious": false,
@@ -68,7 +68,7 @@
     "User": "LAB\\u1"
   },
   {
-    "_fixture": "NEGATIVO pelo FILTRO — instalador legitimo em Program Files cria tarefa SYSTEM onstart. Testa o ramo do filtro, nao a selection.",
+    "_fixture": "NEGATIVE by FILTER — a legitimate installer in Program Files creates a SYSTEM onstart task. Tests the filter branch, not the selection.",
     "_behaviour": "behaviour-05-vendor-installer",
     "_source": "SYNTHETIC FIXTURE",
     "_malicious": false,
@@ -85,7 +85,7 @@
     "User": "LAB\\admin"
   },
   {
-    "_fixture": "EVASAO — mesmo comportamento que o positivo 1, mas o filtro do fabricante e contornado por ParentImage ausente. Este DEVIA casar e casa; esta aqui para mostrar que o filtro nao protege o atacante.",
+    "_fixture": "EVASION — same behaviour as positive 1, but the vendor filter is bypassed by an absent ParentImage. This SHOULD match and does; it is here to show that the filter does not protect the attacker.",
     "_behaviour": "behaviour-06-no-parent-field",
     "_source": "SYNTHETIC FIXTURE",
     "_malicious": true,
@@ -102,7 +102,7 @@
     "User": "LAB\\svc-backup"
   },
   {
-    "_fixture": "FALSO NEGATIVO CONHECIDO — schtasks invocado por caminho relativo com aspas diferentes e /RU em maiusculas. A regra usa comparacao insensivel a maiusculas, entao ISTO CASA. Fixture existe para o provar, nao para o assumir.",
+    "_fixture": "KNOWN FALSE NEGATIVE — schtasks invoked by relative path, with different quoting and /RU in upper case. The rule compares case-insensitively, so THIS MATCHES. The fixture exists to prove that, not to assume it.",
     "_behaviour": "behaviour-07-uppercase-syntax",
     "_source": "SYNTHETIC FIXTURE",
     "_malicious": true,
@@ -119,7 +119,7 @@
     "User": "LAB\\svc-backup"
   },
   {
-    "_fixture": "FALSO NEGATIVO REAL — a tarefa e criada pela API do Task Scheduler, sem schtasks.exe. A regra NAO ve isto, e nenhuma regra baseada em process_creation ve. Limitacao declarada.",
+    "_fixture": "REAL FALSE NEGATIVE — the task is created through the Task Scheduler API, without schtasks.exe. This rule does NOT see it, and no process_creation rule does. A declared limitation.",
     "_behaviour": "behaviour-08-register-scheduledtask",
     "_source": "SYNTHETIC FIXTURE",
     "_malicious": true,
@@ -136,7 +136,7 @@
     "User": "LAB\\svc-backup"
   },
   {
-    "_fixture": "POSITIVO REAL — evento 4698 do sample CC0, TaskContent integral, extraido do JSON normalizado e nao transcrito a mao",
+    "_fixture": "REAL POSITIVE — event 4698 from the CC0 sample, full TaskContent, extracted from the normalised JSON and not transcribed by hand",
     "_behaviour": "behaviour-01-schtasks-system-minute",
     "_source": "REAL EVENT from CC0 sample",
     "_malicious": true,
@@ -152,7 +152,7 @@
     "TaskContent": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <RegistrationInfo>\n    <Date>2021-04-21T13:30:00</Date>\n    <Author>OFFSEC\\admmig</Author>\n    <URI>\\eviltask</URI>\n  </RegistrationInfo>\n  <Triggers>\n    <TimeTrigger>\n      <Repetition>\n        <Interval>PT1M</Interval>\n        <StopAtDurationEnd>false</StopAtDurationEnd>\n      </Repetition>\n      <StartBoundary>2021-04-21T13:30:00</StartBoundary>\n      <Enabled>true</Enabled>\n    </TimeTrigger>\n  </Triggers>\n  <Settings>\n    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>\n    <DisallowStartIfOnBatteries>true</DisallowStartIfOnBatteries>\n    <StopIfGoingOnBatteries>true</StopIfGoingOnBatteries>\n    <AllowHardTerminate>true</AllowHardTerminate>\n    <StartWhenAvailable>false</StartWhenAvailable>\n    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>\n    <IdleSettings>\n      <Duration>PT10M</Duration>\n      <WaitTimeout>PT1H</WaitTimeout>\n      <StopOnIdleEnd>true</StopOnIdleEnd>\n      <RestartOnIdle>false</RestartOnIdle>\n    </IdleSettings>\n    <AllowStartOnDemand>true</AllowStartOnDemand>\n    <Enabled>true</Enabled>\n    <Hidden>false</Hidden>\n    <RunOnlyIfIdle>false</RunOnlyIfIdle>\n    <WakeToRun>false</WakeToRun>\n    <ExecutionTimeLimit>PT72H</ExecutionTimeLimit>\n    <Priority>7</Priority>\n  </Settings>\n  <Actions Context=\"Author\">\n    <Exec>\n      <Command>C:\\tools\\shell.cmd</Command>\n    </Exec>\n  </Actions>\n  <Principals>\n    <Principal id=\"Author\">\n      <UserId>S-1-5-18</UserId>\n      <RunLevel>LeastPrivilege</RunLevel>\n    </Principal>\n  </Principals>\n</Task>"
   },
   {
-    "_fixture": "BLIND SPOT FECHADO — a mesma tarefa registada por Register-ScheduledTask. A regra 1 nao ve, porque nao ha schtasks.exe. Esta ve, porque audita o RESULTADO.",
+    "_fixture": "BLIND SPOT CLOSED — the same task registered by Register-ScheduledTask. Rule 1 does not see it, because there is no schtasks.exe. This one does, because it audits the RESULT.",
     "_behaviour": "behaviour-08-register-scheduledtask",
     "_source": "SYNTHETIC FIXTURE",
     "_malicious": true,
@@ -168,7 +168,7 @@
     "TaskContent": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <RegistrationInfo><Author>LAB\\admin</Author></RegistrationInfo>\n  <Triggers><TimeTrigger><Repetition><Interval>PT1M</Interval></Repetition></TimeTrigger></Triggers>\n  <Actions Context=\"Author\"><Exec><Command>C:\\Windows\\Temp\\a.cmd</Command></Exec></Actions>\n  <Principals><Principal id=\"Author\"><UserId>S-1-5-18</UserId><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>\n</Task>"
   },
   {
-    "_fixture": "NEGATIVO pelo FILTRO — tarefa propria do Windows sob \\Microsoft\\, SYSTEM e gatilho de arranque",
+    "_fixture": "NEGATIVE by FILTER — a Windows-owned task under \\Microsoft\\, SYSTEM and a startup trigger",
     "_behaviour": "behaviour-09-windows-own-task",
     "_source": "SYNTHETIC FIXTURE",
     "_malicious": false,
@@ -184,7 +184,7 @@
     "TaskContent": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <RegistrationInfo><Author>Microsoft Corporation</Author></RegistrationInfo>\n  <Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers>\n  <Actions Context=\"Author\"><Exec><Command>C:\\Windows\\System32\\usoclient.exe</Command></Exec></Actions>\n  <Principals><Principal id=\"Author\"><UserId>S-1-5-18</UserId><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>\n</Task>"
   },
   {
-    "_fixture": "NEGATIVO por gatilho — SYSTEM mas semanal: manutencao plausivel",
+    "_fixture": "NEGATIVE by trigger — SYSTEM but weekly: plausible maintenance",
     "_behaviour": "behaviour-10-weekly-system-task",
     "_source": "SYNTHETIC FIXTURE",
     "_malicious": false,
@@ -200,7 +200,7 @@
     "TaskContent": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <RegistrationInfo><Author>LAB\\admin</Author></RegistrationInfo>\n  <Triggers><CalendarTrigger><ScheduleByWeek><DaysOfWeek><Sunday/></DaysOfWeek></ScheduleByWeek></CalendarTrigger></Triggers>\n  <Actions Context=\"Author\"><Exec><Command>C:\\Program Files\\Vendor\\clean.exe</Command></Exec></Actions>\n  <Principals><Principal id=\"Author\"><UserId>S-1-5-18</UserId><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>\n</Task>"
   },
   {
-    "_fixture": "NEGATIVO por principal — gatilho de arranque mas corre como utilizador, sem privilegio",
+    "_fixture": "NEGATIVE by principal — a startup trigger but runs as a user, no privilege",
     "_behaviour": "behaviour-11-user-boot-task",
     "_source": "SYNTHETIC FIXTURE",
     "_malicious": false,
@@ -216,7 +216,7 @@
     "TaskContent": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <RegistrationInfo><Author>LAB\\admin</Author></RegistrationInfo>\n  <Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers>\n  <Actions Context=\"Author\"><Exec><Command>C:\\Tools\\sync.exe</Command></Exec></Actions>\n  <Principals><Principal id=\"Author\"><UserId>LAB\\u1</UserId><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>\n</Task>"
   },
   {
-    "_fixture": "FALSO NEGATIVO DECLARADO — mesma tarefa maliciosa, com o nome camuflado sob \\Microsoft\\. O filtro exclui-a. Fraqueza documentada, nao escondida.",
+    "_fixture": "DECLARED FALSE NEGATIVE — the same malicious task, with its name masqueraded under \\Microsoft\\. The filter excludes it. A documented weakness, not a hidden one.",
     "_behaviour": "behaviour-12-masquerading-task-name",
     "_source": "SYNTHETIC FIXTURE",
     "_malicious": true,
@@ -232,7 +232,7 @@
     "TaskContent": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <RegistrationInfo><Author>LAB\\admin</Author></RegistrationInfo>\n  <Triggers><TimeTrigger><Repetition><Interval>PT1M</Interval></Repetition></TimeTrigger></Triggers>\n  <Actions Context=\"Author\"><Exec><Command>C:\\Windows\\Temp\\a.cmd</Command></Exec></Actions>\n  <Principals><Principal id=\"Author\"><UserId>S-1-5-18</UserId><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>\n</Task>"
   },
   {
-    "_fixture": "NEGATIVO de gating — evento 4688 cuja linha de comando contem as MESMAS strings que a regra 2 procura. Testa se selection_event EventID 4698 realmente porta.",
+    "_fixture": "GATING NEGATIVE — a 4688 event whose command line contains the SAME strings that rule 2 looks for. Tests whether selection_event EventID 4698 actually gates.",
     "_behaviour": "behaviour-13-string-collision",
     "_source": "SYNTHETIC FIXTURE",
     "_malicious": false,

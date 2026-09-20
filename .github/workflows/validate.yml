@@ -20,8 +20,8 @@ permissions:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Gate do projeto: forma da regra, schema oficial do Sigma, e comportamento
-  # contra as fixtures. Tudo aqui e bloqueante.
+  # Project gate: rule shape, the official Sigma schema, and behaviour against the
+  # fixtures. Everything here is blocking.
   # ---------------------------------------------------------------------------
   project-tests:
     name: project tests
@@ -43,8 +43,8 @@ jobs:
           python - <<'PY'
           import pathlib, sys, yaml
 
-          # O schema oficial so exige title, logsource e detection.
-          # Este projeto exige mais -- em particular, falsepositives nao vazio.
+          # The official schema only requires title, logsource and detection.
+          # This project requires more -- in particular, a non-empty falsepositives.
           REQUIRED = {'title', 'id', 'status', 'description', 'author', 'date',
                       'logsource', 'detection', 'falsepositives', 'level'}
           LEVELS = {'informational', 'low', 'medium', 'high', 'critical'}
@@ -88,14 +88,14 @@ jobs:
           echo "ref:    $GITHUB_REF"
 
   # ---------------------------------------------------------------------------
-  # Validacao independente com o tooling OFICIAL do SigmaHQ.
+  # Independent validation with SigmaHQ's OFFICIAL tooling.
   #
-  # Bloqueante   -- o pySigma tem de conseguir PARSEAR as regras. Se nao consegue,
-  #                 nao sao regras Sigma validas, e isso e um defeito nosso.
-  # Report only  -- os validadores da SigmaHQ codificam as convencoes do REPOSITORIO
-  #                 SigmaHQ (formato do nome de ficheiro, ordem de tags, estilo do
-  #                 titulo). Este repositorio nao e o deles. As observacoes ficam
-  #                 registadas no log; nao falham a build.
+  # Blocking     -- pySigma must be able to PARSE the rules. If it cannot, they are not
+  #                 valid Sigma rules, and that is a defect on our side.
+  # Report only  -- SigmaHQ's validators encode the conventions of the SigmaHQ
+  #                 REPOSITORY (file-name format, tag order, title style). This
+  #                 repository is not theirs. The findings are recorded in the log;
+  #                 they do not fail the build.
   # ---------------------------------------------------------------------------
   sigma-validation:
     name: sigma independent validation
