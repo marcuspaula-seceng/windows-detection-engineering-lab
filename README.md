@@ -164,7 +164,8 @@ detections are worth writing. Running both would cover more than running either.
 ```bash
 pip install -r requirements.txt
 python tools/validate_schema.py    # official Sigma JSON Schema
-python tools/run_tests.py          # fixture matrix -- this is what CI runs
+python tools/run_tests.py          # fixture matrix
+python -m unittest discover -s tests -p 'test_*.py' -v  # evaluator rejection tests
 ```
 
 Against the real samples, on Windows:
@@ -244,7 +245,7 @@ Marcus Paula — Security & Infrastructure Engineer · Dublin, Ireland
 flowchart TD
     A[Real Windows event data] --> B[Fixtures with recorded SHA-256]
     B --> C[Detection rule]
-    C --> D[Schema validation, upstream pinned by commit and hash]
+    C --> D[Schema validation against the vendored upstream schema]
     C --> E[True and false positive matrix]
     D --> F{CI gate}
     E --> F
@@ -256,10 +257,10 @@ flowchart TD
 
 | Layer | What it checks |
 |---|---|
-| Schema validation | Rule structure against the official upstream JSON schema, pinned by commit and hash |
+| Schema validation | Rule structure against the official upstream JSON schema, vendored with its upstream commit recorded |
 | Positive fixtures | Malicious behaviours the rule must detect |
 | Negative fixtures | Benign behaviours that must not raise an alert |
-| CI | Toolchain pinned to a resolved version, run on every push |
+| CI | Runs on changes selected by workflow path filters; sigma-cli and validators are pinned, while resolved pySigma/dependency versions are recorded |
 
 Source data is public-domain with recorded SHA-256 and documented provenance.
 
@@ -291,8 +292,8 @@ Decide explicitly which behaviours must alert and which must stay silent, then k
 for both.
 
 **Phase 3 — Automation and validation.** Validate rule structure against the official upstream
-JSON schema, pinned by commit and hash rather than by a moving tag, and run the whole thing in
-CI with a version-pinned toolchain.
+JSON schema versioned in this repository with its upstream commit recorded. CI pins
+sigma-cli and validators; other resolved dependency versions are recorded.
 
 **Phase 4 — Outcome and lessons learned.** A four-hundred-character truncation in a field of
 over sixteen hundred left the entire suite green while the rule silently never fired.
@@ -303,6 +304,6 @@ some hosts fails silently on exactly those hosts.
 
 ## Technologies
 
-Sigma rule format · pySigma with a version pinned by resolved release · Windows Event Log
-(Security and Sysmon-style telemetry) · JSON Schema validation against an upstream definition
-pinned by commit and hash · Python 3 · GitHub Actions
+Sigma rule format · pySigma with its resolved version recorded in CI · Windows Event Log
+(Security events 4688 and 4698; Sysmon not validated) · JSON Schema validation against an upstream definition
+vendored with its upstream commit recorded · Python 3 · GitHub Actions
