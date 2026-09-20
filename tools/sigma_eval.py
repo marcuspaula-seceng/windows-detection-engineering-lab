@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
-"""Avaliador minimo de regras Sigma contra eventos ja normalizados.
+"""Minimal Sigma rule evaluator for already-normalised events.
 
-Isto NAO e o pySigma. E um subconjunto escrito de proposito, para provar que a logica da
-regra e compreendida -- nao para substituir a ferramenta oficial.
+This is NOT pySigma. It is a deliberately small subset, written to show that the rule
+logic is understood -- not to replace the official tool.
 
-SUPORTADO
-    modificadores      contains, contains|all, startswith, endswith, igualdade exacta
-    valores            escalar ou lista (lista = OR dentro do mesmo campo)
-    dentro de um bloco varios campos = AND
-    condition          "all of <prefixo>_*", "1 of <prefixo>_*", "and", "or", "not",
-                       nomes de bloco isolados
-    comparacao         insensivel a maiusculas (o comportamento por omissao do Sigma)
+SUPPORTED
+    modifiers          contains, contains|all, startswith, endswith, exact equality
+    values             scalar or list (a list means OR within the same field)
+    within one block   several fields mean AND
+    condition          "all of <prefix>_*", "1 of <prefix>_*", "and", "or", "not",
+                       bare block names
+    comparison         case-insensitive (Sigma's default behaviour)
 
-NAO SUPORTADO -- e a regra e RECUSADA se os usar, em vez de dar resultado errado em silencio
+NOT SUPPORTED -- a rule using any of these is REJECTED rather than silently mis-evaluated
     |re  |base64  |base64offset  |cidr  |lt  |lte  |gt  |gte  |fieldref  |expand
-    null / campos ausentes como valor
+    null / absent fields used as a value
     aggregations (| count() ...)
-    correlacoes entre eventos
+    correlations across events
 
-Uso:
-    python sigma_eval.py <regra.yml> <eventos.json>
+Usage:
+    python sigma_eval.py <rule.yml> <events.json>
 """
 
 import json
@@ -34,14 +34,14 @@ SUPPORTED_MODIFIER_SEQUENCES = {
 
 
 class UnsupportedRule(Exception):
-    """A regra usa algo que este avaliador nao implementa."""
+    """The rule uses something this evaluator does not implement."""
 
 
 def match_value(actual, expected, modifiers):
-    """Compara UM valor observado com UM valor esperado, aplicando os modificadores."""
+    """Compare ONE observed value with ONE expected value, applying the modifiers."""
     if actual is None:
-        # Campo ausente nunca casa. E o comportamento correcto -- e a origem de muito
-        # falso negativo silencioso quando o schema do log nao tem o campo.
+        # An absent field never matches. That is correct behaviour -- and the source of many
+        # a silent false negative when the log schema does not carry the field.
         return False
 
     a = str(actual).lower()
@@ -57,46 +57,46 @@ def match_value(actual, expected, modifiers):
 
 
 def match_field(event, field_spec, expected):
-    """Avalia 'Campo|modificadores: valor(es)' contra um evento."""
+    """Evaluate 'Field|modifiers: value(s)' against one event."""
     if not isinstance(field_spec, str) or not field_spec.split('|')[0]:
-        raise UnsupportedRule('nome de campo invalido')
+        raise UnsupportedRule('invalid field name')
     parts = field_spec.split('|')
     field = parts[0]
     modifiers = [p.lower() for p in parts[1:]]
 
     if tuple(modifiers) not in SUPPORTED_MODIFIER_SEQUENCES:
-        raise UnsupportedRule(f'modificadores nao suportados em {field_spec!r}')
+        raise UnsupportedRule(f'unsupported modifiers in {field_spec!r}')
 
     actual = event.get(field)
     values = expected if isinstance(expected, list) else [expected]
     if not values or any(v is None or not isinstance(v, (str, int, float, bool)) for v in values):
-        raise UnsupportedRule(f'valor nao suportado em {field_spec!r}')
+        raise UnsupportedRule(f'unsupported value in {field_spec!r}')
 
     if 'all' in modifiers:
-        # todos os valores tem de casar -- AND dentro do campo
+        # every value must match -- AND within the field
         return all(match_value(actual, v, modifiers) for v in values)
-    # por omissao: OR dentro do campo
+    # default: OR within the field
     return any(match_value(actual, v, modifiers) for v in values)
 
 
 def match_block(event, block):
-    """Um bloco de detection. Varios campos = AND. Lista de mapas = OR."""
+    """One detection block. Several fields mean AND. A list of maps means OR."""
     if isinstance(block, list):
         if not block:
-            raise UnsupportedRule('bloco vazio')
+            raise UnsupportedRule('empty block')
         # Evaluate every alternative: unsupported syntax must not be hidden by a match.
         return any([match_block(event, item) for item in block])
     if not isinstance(block, dict) or not block:
-        raise UnsupportedRule(f'forma de bloco nao suportada: {type(block).__name__}')
+        raise UnsupportedRule(f'unsupported block form: {type(block).__name__}')
     return all([match_field(event, spec, value) for spec, value in block.items()])
 
 
 def resolve_condition(condition, blocks, event):
-    """Avalia a condition. Subconjunto: 'all of X_*', '1 of X_*', and/or/not, nomes."""
+    """Evaluate the condition. Subset: 'all of X_*', '1 of X_*', and/or/not, names."""
     text = condition.strip()
 
     if '|' in text:
-        raise UnsupportedRule('aggregation na condition nao e suportada')
+        raise UnsupportedRule('aggregation in a condition is not supported')
 
     def expand(match):
         quantifier, prefix = match.group(1).lower(), match.group(2)
@@ -106,7 +106,7 @@ def resolve_condition(condition, blocks, event):
             pattern = '^' + re.escape(prefix).replace(r'\*', '.*') + '$'
             names = [n for n in blocks if re.match(pattern, n)]
         if not names:
-            raise UnsupportedRule(f'nenhum bloco casa com {prefix!r}')
+            raise UnsupportedRule(f'no block matches {prefix!r}')
         joiner = ' and ' if quantifier == 'all' else ' or '
         return '(' + joiner.join(f'BLOCK_{n}' for n in names) + ')'
 
@@ -119,12 +119,12 @@ def resolve_condition(condition, blocks, event):
     expression = text.replace(' AND ', ' and ').replace(' OR ', ' or ').replace(' NOT ', ' not ')
 
     if not re.fullmatch(r'[\w\s()]*', expression):
-        raise UnsupportedRule(f'condition com sintaxe nao suportada: {condition!r}')
+        raise UnsupportedRule(f'unsupported condition syntax: {condition!r}')
 
     try:
         return bool(eval(expression, {'__builtins__': {}}, values))  # noqa: S307 - expressao validada acima
     except (NameError, SyntaxError, TypeError) as error:
-        raise UnsupportedRule(f'condition nao suportada: {condition!r}') from error
+        raise UnsupportedRule(f'unsupported condition: {condition!r}') from error
 
 
 def main():
@@ -148,10 +148,10 @@ def main():
     try:
         resolve_condition(condition, detection, {})
     except UnsupportedRule as error:
-        print(f'REGRA RECUSADA: {error}')
+        print(f'RULE REJECTED: {error}')
         return 3
 
-    print(f"regra      : {rule['title']}")
+    print(f"rule       : {rule['title']}")
     print(f"nivel      : {rule.get('level', '-')}   status: {rule.get('status', '-')}")
     print(f"logsource  : {rule['logsource']}")
     print(f"condition  : {condition}")
@@ -163,7 +163,7 @@ def main():
         try:
             (hits if resolve_condition(condition, detection, event) else misses).append(event)
         except UnsupportedRule as error:
-            print(f'REGRA RECUSADA: {error}')
+            print(f'RULE REJECTED: {error}')
             return 3
 
     print(f'MATCH     : {len(hits)}')

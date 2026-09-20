@@ -2,19 +2,19 @@ title: Scheduled Task Registered To Run As SYSTEM With Persistent Trigger
 id: 3d7a91c6-08fe-4b52-b1d4-6e2c9f04a8b3
 status: experimental
 description: |
-    Deteta, no evento de auditoria 4698 ("a scheduled task was created"), o registo de uma
-    tarefa cujo principal e a conta SYSTEM e cujo gatilho e persistente -- repeticao de poucos
-    minutos, arranque da maquina, ou inicio de sessao.
+    Detects, in audit event 4698 ("a scheduled task was created"), the registration of a
+    task whose principal is the SYSTEM account and whose trigger is persistent -- a repetition
+    of a few minutes, machine startup, or logon.
 
-    Complementa, sem substituir, a regra de process_creation. A regra de processo ve COMO a
-    tarefa foi criada (schtasks.exe). Esta ve QUE a tarefa foi criada, e apanha o caso em que
-    a criacao passa por Register-ScheduledTask ou pela API do Task Scheduler, sem nunca lancar
-    schtasks.exe.
+    It complements, and does not replace, the process_creation rule. The process rule sees HOW
+    the task was created (schtasks.exe). This one sees THAT the task was created, and catches
+    the case where creation goes through Register-ScheduledTask or the Task Scheduler API
+    without ever launching schtasks.exe.
 
-    Todos os padroes procurados foram lidos do TaskContent real do sample publico
+    Every pattern searched for was read from the real TaskContent of the public sample
     "ID4688-4698 Persistent scheduled task with SYSTEM privileges creation.evtx"
-    (mdecrevoisier/EVTX-to-MITRE-Attack, CC0), excepto BootTrigger e LogonTrigger, que sao
-    os equivalentes documentados de /sc onstart e /sc onlogon no schema do Task Scheduler.
+    (mdecrevoisier/EVTX-to-MITRE-Attack, CC0), except BootTrigger and LogonTrigger, which are
+    the documented equivalents of /sc onstart and /sc onlogon in the Task Scheduler schema.
 references:
     - https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4698
     - https://learn.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-schema
@@ -49,9 +49,9 @@ detection:
         TaskName|startswith: '\Microsoft\'
     condition: all of selection_* and not filter_windows_own_tasks
 falsepositives:
-    - Agentes de monitorizacao e gestao de configuracao (SCCM, Intune, Ansible, ferramentas de
-      backup) que registam tarefas SYSTEM com gatilho de arranque. Sao a principal fonte de
-      ruido desta regra e devem ser filtrados por TaskName numa organizacao concreta.
-    - Instaladores de software que registam tarefas de atualizacao a correr no arranque.
-    - Tarefas de manutencao internas criadas por automacao propria da organizacao.
+    - Monitoring and configuration-management agents (SCCM, Intune, Ansible, backup tools)
+      that register SYSTEM tasks with a startup trigger. They are the main source of noise
+      for this rule and should be filtered by TaskName in a specific organisation.
+    - Software installers that register update tasks running at startup.
+    - Internal maintenance tasks created by an organisation's own automation.
 level: medium

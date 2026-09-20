@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Corre as fixtures contra todas as regras Sigma do projecto.
+"""Run the fixtures against every Sigma rule in the project.
 
-Cada fixture declara:
+Each fixture declares:
 
-    _expected    o veredito esperado POR REGRA -- o que a regra foi desenhada para fazer
-    _malicious   ground truth -- se o comportamento e o que queremos apanhar
-    _behaviour   identificador do comportamento; varias fixtures podem descrever o
-                 mesmo comportamento visto por telemetrias diferentes
+    _expected    the expected verdict PER RULE -- what the rule was designed to do
+    _malicious   ground truth -- whether the behaviour is what we want to catch
+    _behaviour   behaviour identifier; several fixtures can describe the
+                 same behaviour seen through different telemetry sources
 
-A distincao entre _expected e _malicious e deliberada. Uma regra pode NAO apanhar um
-comportamento malicioso e ainda assim comportar-se como declarado -- isso e um falso
-negativo CONHECIDO, e conta como tal na matriz.
+The distinction between _expected and _malicious is deliberate. A rule can fail to catch
+a malicious behaviour and still behave as declared -- that is a KNOWN false
+negative, and it counts as one in the matrix.
 
-Sai com codigo 1 se qualquer veredito divergir do declarado.
+Exits with code 1 if any verdict diverges from the declared one.
 
     python tools/run_tests.py
 """
@@ -38,10 +38,10 @@ def load_evaluator():
 
 
 def rule_fields(blocks):
-    """Campos de telemetria que a regra referencia.
+    """Telemetry fields the rule references.
 
-    EventID fica de fora de proposito: e um selector presente em todo o evento Windows,
-    nao telemetria que distinga uma logsource da outra.
+    EventID is left out on purpose: it is a selector present in every Windows event,
+    not telemetry that distinguishes one logsource from another.
     """
     fields = set()
     for block in blocks.values():
@@ -55,10 +55,10 @@ def rule_fields(blocks):
 
 
 def in_scope(fixture, fields):
-    """A fixture pertence a telemetria desta regra?
+    """Does the fixture belong to this rule's telemetry?
 
-    Uma regra de process_creation nao "falha" ao nao apanhar um evento 4698: nao o ve.
-    Contar isso como falso negativo tornaria a metrica sem sentido.
+    A process_creation rule does not "fail" by missing a 4698 event: it never sees it.
+    Counting that as a false negative would make the metric meaningless.
     """
     return any(fixture.get(name) is not None for name in fields)
 
@@ -136,30 +136,30 @@ def main():
         counts = {key: scoped.count(key) for key in ('TP', 'TN', 'FP', 'FN')}
         skipped = len(outcomes) - len(scoped)
         print(f"  {stem}")
-        print(f"      no ambito da sua telemetria: {len(scoped)} de {len(outcomes)} fixtures")
+        print(f"      in scope for its telemetry: {len(scoped)} of {len(outcomes)} fixtures")
         print(f"      TP={counts['TP']}  TN={counts['TN']}  "
               f"FP={counts['FP']}  FN={counts['FN']}")
         if skipped:
-            print(f"      {skipped} fixtures de outra fonte de telemetria, nao contadas")
+            print(f"      {skipped} fixtures from another telemetry source, not counted")
 
     malicious_behaviours = {b: v for b, v in per_behaviour.items() if v['malicious']}
     covered = sum(1 for v in malicious_behaviours.values() if v['detected'])
-    print('\nCOMBINED COVERAGE (por comportamento, nao por evento)')
-    print(f"  comportamentos maliciosos : {len(malicious_behaviours)}")
-    print(f"  detectados por alguma regra: {covered}")
+    print('\nCOMBINED COVERAGE (by behaviour, not by event)')
+    print(f"  malicious behaviours       : {len(malicious_behaviours)}")
+    print(f"  detected by some rule      : {covered}")
     for name, value in sorted(malicious_behaviours.items()):
         if not value['detected']:
-            print(f"      NAO DETECTADO: {name}")
+            print(f"      NOT DETECTED: {name}")
 
     benign_behaviours = {b: v for b, v in per_behaviour.items() if not v['malicious']}
     noisy = [b for b, v in benign_behaviours.items() if v['detected']]
-    print(f"  comportamentos benignos    : {len(benign_behaviours)}   "
-          f"com alerta: {len(noisy)}")
+    print(f"  benign behaviours          : {len(benign_behaviours)}   "
+          f"alerting: {len(noisy)}")
     for name in noisy:
-        print(f"      FALSO POSITIVO: {name}")
+        print(f"      FALSE POSITIVE: {name}")
 
     total = len(fixtures) * len(rules)
-    print(f"\n{total - failures}/{total} vereditos conforme declarado")
+    print(f"\n{total - failures}/{total} verdicts as declared")
     return 1 if failures else 0
 
 

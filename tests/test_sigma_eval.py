@@ -65,7 +65,7 @@ class EvaluatorContractTests(unittest.TestCase):
             result = subprocess.run([sys.executable, str(ROOT / 'tools' / 'sigma_eval.py'),
                                      str(rule), str(events)], capture_output=True, text=True)
             self.assertEqual(result.returncode, 3, result.stdout + result.stderr)
-            self.assertIn('REGRA RECUSADA', result.stdout)
+            self.assertIn('RULE REJECTED', result.stdout)
 
 
 if __name__ == '__main__':
